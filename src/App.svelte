@@ -13,7 +13,7 @@
     actualOTP = '',
     otpRequested = false;
 
-  const baseURL = 'http://localhost:8090'
+  const baseURL = 'https://appointment-a3q2.onrender.com'
   
   let data;
 
