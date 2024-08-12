@@ -1,5 +1,5 @@
 <script>
-  import { formInfo } from './Store';
+  import { formInfo, OTP } from './Store';
 
   let name = '',
     email = '',
@@ -7,9 +7,52 @@
     preferredDate = '',
     preferredTime = '',
     appointmentReason = '',
-    consent = false;
+    consent = false,
+    otpField = false,
+    message,
+    actualOTP = '',
+    otpRequested = false;
+
+  const baseURL = 'http://localhost:8090'
   
   let data;
+
+  const sendMail = async () => {
+    const url = `${baseURL}/mail/send/${email}`;
+    console.log(data.email);
+      try {
+          const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+                'Content-Type': 'application/json'
+            },
+          
+          body: JSON.stringify({subject: "BeKind session details..."})
+        })
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const result = await response.text();
+        console.log(result);
+      } catch (error) {
+          console.error('Error: ', error);
+      }
+  }
+
+  const validateOTP = (value) => {
+    if (value === actualOTP) {
+      message = `Success! 🎉 OTP is correct. You will receive the details on your mail id in a while 📧.`
+      otpField = false;
+      sendMail();
+    } else {
+      message = 'Wrong OTP ❌. Please try again! 🔄'
+      setTimeout(() => {
+        window.location.reload();
+      }, 2500);
+    }
+  }
 
   const handleSubmit = async () => {
     // Create the object from form fields
@@ -35,10 +78,32 @@
     }
   };
 
+  const sendMessage = async () => {
+      if (otpRequested) return; 
+      const url = `${baseURL}/sms`;
+      try {
+          const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const result = await response.text();
+        actualOTP = result;
+        otpRequested = true;
+      } catch (error) {
+          console.error('Error: ', error);
+      }
+  }
+
   const updateDate = async () => {
-    const url = 'http://localhost:8090/form';
+    const url = `${baseURL}/form`;
     try {
-        console.log('Sending data:', data); 
         const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -53,6 +118,8 @@
 
       const result = await response.json();
       console.log('Success:', result);
+      sendMessage();
+      otpField = true;
     } catch (error) {
       console.error('Error: ', error);
     }
@@ -118,7 +185,7 @@
       </div>
 
       <div class="form-group">
-        <label for="reasonForAppointment">Reason for Appointment 💬</label>
+        <label for="reasonForAppointment">Reason for Appointment ✍️</label>
         <textarea
           id="reasonForAppointment"
           bind:value={appointmentReason}
@@ -138,7 +205,24 @@
           I consent to treatment 😊
         </label>
       </div>
-
+      {#if otpField === true}
+        <div class="form-group">
+          <label for="otpField">Enter OTP 🔢</label>
+          <input
+            id="otpField"
+            bind:value={$OTP}
+            type="text"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <input type="Submit" value="Validate" style="width: 50%;"
+          on:click={() => validateOTP($OTP)} />
+        </div>
+      {/if}
+      {#if message}
+        <p>{message}</p>
+      {/if}
       <div class="form-group">
         <input type="submit" value="Submit" />
       </div>

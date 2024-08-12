@@ -8,3 +8,5 @@ export const formInfo = writable ({
     preferredTime: '',
     appointmentReason: ''
 })
+
+export const OTP = writable('');
